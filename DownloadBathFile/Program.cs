@@ -22,6 +22,7 @@ namespace DownloadBathFile
             {
                 Console.WriteLine("No m3u8 file found!");
                 Console.ReadKey();
+                return;
             }
             var file = new StreamReader(fileLink);
             string line;
@@ -34,6 +35,7 @@ namespace DownloadBathFile
                 }
             }
             new DownloadHelper(directory, "mp4", 8).DownloadFiles(urlList);
+            Console.WriteLine("Press q to quit");
             while (Console.ReadLine() != "q")
             {
                 Console.WriteLine("Press q to quit");
@@ -97,6 +99,7 @@ namespace DownloadBathFile
             private Object thisLock = new Object();            
             private Dictionary<string, string> _result;
             private Stack<string> Stack;
+            private int _numberOfTryAgain = 0;
             private void Wc_Complete(object sender, AsyncCompletedEventArgs e)
             {                
                 lock (thisLock)
@@ -133,7 +136,8 @@ namespace DownloadBathFile
             {
                 var maxstr = max.ToString();
                 var numberStr = number.ToString();
-                for (int i = 0; i < maxstr.Length - numberStr.Length; i++)
+                var numerStrLength = numberStr.Length;
+                for (int i = 0; i < maxstr.Length - numerStrLength; i++)
                 {
                     numberStr = "0" + numberStr;
                 }
@@ -141,18 +145,43 @@ namespace DownloadBathFile
             }
 
             private bool VefifyResult() {
-                var unSuccessedList = new List<string>();
-                foreach(var r in _result)
+                var verifyResult = new Dictionary<string, string>();
+                foreach (var r in _result)
                 {
                     var file = new FileInfo(r.Value);
                     if(!file.Exists || file.Length == 0)
                     {
-                        unSuccessedList.Add(r.Key);
+                        verifyResult.Add(r.Key, r.Value);
                     }
                 }
-                if (unSuccessedList.Any())
+                if (verifyResult.Any())
                 {
-                    DownloadFiles(unSuccessedList);
+                    //download again (3 times)
+                    if (_numberOfTryAgain > 2) {
+                        Console.WriteLine("There's some dead links: ");
+                        foreach(var r in verifyResult) {
+                            Console.WriteLine(r.Key);
+                            Console.WriteLine("local path:"  + r.Value);
+                        }
+                        return true;
+                    }
+                    _numberOfTryAgain++;                    
+                    _result = new Dictionary<string, string>(verifyResult);
+                    Stack = new Stack<string>(verifyResult.Keys);
+
+                    if (Stack.Count < _numberOfThread)
+                    {
+                        _numberOfThread = Stack.Count;
+                    }
+
+                    for (int i = 0; i < _numberOfThread; i++)
+                    {
+                        var WC = new WebClient();
+                        WC.DownloadFileCompleted += Wc_Complete;
+                        string currFile = Stack.Pop();
+                        WC.DownloadFileAsync(new Uri(currFile), _result[currFile]);
+                        _runningThread++;
+                    }
                     return false;
                 }
                 return true;
