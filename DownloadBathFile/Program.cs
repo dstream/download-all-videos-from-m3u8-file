@@ -160,6 +160,14 @@ namespace DownloadBathFile
                     if (_numberOfTryAgain > 2) {
                         Console.WriteLine("There's some dead links: ");
                         foreach(var r in verifyResult) {
+                            try
+                            {
+                                File.Delete(r.Value);
+                            }
+                            catch
+                            {
+                                
+                            }                            
                             Console.WriteLine(r.Key);
                             Console.WriteLine("local path:"  + r.Value);
                         }
