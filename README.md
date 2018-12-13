@@ -1,5 +1,5 @@
 # download-all-videos-from-m3u8-file
-We get an m3u8 file and want to get all the videos but you're lazy man that don't want to do it manually. This tool is what you need
+We got a m3u8 file and want to get all the videos but you're lazy man that don't want to do it manually. This tool is what you need
 
 This build by .netcore 2.1, only run in windows.
 
